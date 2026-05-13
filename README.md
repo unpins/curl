@@ -1,16 +1,18 @@
 # curl
 
-Standalone build of [curl](https://curl.se/). Runs on any Linux, macOS or Windows without external dependencies.
+Standalone build of [curl](https://curl.se/).
+
+Part of the [unpins](https://unpins.org) project — single-binary, statically-linked builds that run on any Linux, macOS or Windows without external dependencies.
 
 ## Installation
 
-You can install this package instantly using the [unpin](https://github.com/unpins/unpin) package manager:
+Install with [unpin](https://github.com/unpins/unpin):
 
 ```bash
 unpin curl
 ```
 
-Or run it without installing:
+Or run without installing:
 
 ```bash
 unpin run curl
@@ -23,7 +25,7 @@ nix build github:unpins/curl
 ./result/bin/curl
 ```
 
-Or, in one shot:
+Or run directly:
 
 ```bash
 nix run github:unpins/curl
@@ -31,6 +33,6 @@ nix run github:unpins/curl
 
 The first invocation will offer to add the [unpins.cachix.org](https://unpins.cachix.org) substituter so most pulls come pre-built.
 
-## Manual Download
+## Manual download
 
-Standalone binaries and data packages are available on the [Releases](https://github.com/unpins/curl/releases) page.
+The [Releases](https://github.com/unpins/curl/releases) page has standalone binaries for manual download.
