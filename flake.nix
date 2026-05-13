@@ -26,7 +26,7 @@
       #   Schannel (Windows native TLS, no CA bundle to ship) instead
       #   of OpenSSL; libssh2 disabled (needs a crypto backend).
       #   Microsoft's own curl.exe also ships without scp.
-      windowsBuild = pkgs: ulib.mingwStandalone {
+      windowsBuild = pkgs: ulib.mingwStaticBinary {
         pkg = (ulib.mingwStaticCross pkgs).curl;
         staticDeps = {
           opensslSupport = false;
