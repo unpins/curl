@@ -2,7 +2,12 @@
 
 Standalone build of [curl](https://curl.se/).
 
-Part of the [unpins](https://unpins.org) project — single-binary, statically-linked builds that run on any Linux, macOS or Windows without external dependencies.
+[![CI](https://github.com/unpins/curl/actions/workflows/curl.yml/badge.svg)](https://github.com/unpins/curl/actions)
+![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-✓-success?logo=apple&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-✓-success?logo=windows&logoColor=white)
+
+Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
 ## Installation
 
@@ -35,4 +40,4 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 
 ## Manual download
 
-The [Releases](https://github.com/unpins/curl/releases) page has standalone binaries for manual download.
+The [Releases](https://github.com/unpins/curl/releases) page has standalone binaries and a `.tar.zst` data archive (man pages and completions) for manual download.
