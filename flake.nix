@@ -20,7 +20,21 @@
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
       #   http3 OFF: needs quictls-patched openssl.
-      build = pkgs: pkgs.pkgsStatic.curl.override { http3Support = false; };
+      #
+      # Embed the Mozilla CA bundle via curl's --with-ca-embed (8.5+).
+      # The embed is the default trust store: the curl CLI uses it
+      # whenever neither --cacert/--capath nor $CURL_CA_BUNDLE /
+      # $SSL_CERT_FILE is set (see src/config2setopts.c). The
+      # compile-time --with-ca-bundle path is NOT consulted at
+      # runtime. To trust host-installed roots (e.g. corp CA via
+      # update-ca-certificates), users explicitly pass --cacert or
+      # set CURL_CA_BUNDLE. ~454KB cost.
+      build = pkgs:
+        (pkgs.pkgsStatic.curl.override { http3Support = false; }).overrideAttrs (old: {
+          configureFlags = (old.configureFlags or [ ]) ++ [
+            "--with-ca-embed=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+          ];
+        });
 
       # Windows feature set:
       #   Schannel (Windows native TLS, no CA bundle to ship) instead
