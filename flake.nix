@@ -29,11 +29,28 @@
       # runtime. To trust host-installed roots (e.g. corp CA via
       # update-ca-certificates), users explicitly pass --cacert or
       # set CURL_CA_BUNDLE. ~454KB cost.
+      #
+      # `--disable-shared` is critical on darwin: pkgsStatic.curl on
+      # darwin still produces a `libcurl.4.dylib` and libtool prefers
+      # shared, so the `curl` binary ends up dynamically linked against
+      # it (single-binary policy violation). Linux pkgsStatic suppresses
+      # this automatically; darwin doesn't.
+      #
+      # Quirk: `nix-lib`'s `filterEnableStaticOnDarwin` strips
+      # `--disable-shared` from `configureFlags` on darwin to avoid
+      # `--enable-static` translating into `LDFLAGS="-static"` and
+      # breaking later AC_CHECK_LIB probes. To re-inject the flag
+      # *after* that filter we push it via `configureFlagsArray` in
+      # `preConfigure` — that bash array is appended at configure-time
+      # and is invisible to Nix-list filtering.
       build = pkgs:
         (pkgs.pkgsStatic.curl.override { http3Support = false; }).overrideAttrs (old: {
           configureFlags = (old.configureFlags or [ ]) ++ [
             "--with-ca-embed=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
+          preConfigure = (old.preConfigure or "") + ''
+            configureFlagsArray+=("--disable-shared")
+          '';
         });
 
       # Windows feature set:
