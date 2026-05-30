@@ -16,6 +16,13 @@
       inherit self;
       name = "curl";
 
+      # Smoke floor: `curl --version` on every native ABI + the Windows
+      # runner. `libcurl/` is in the version banner on all backends (OpenSSL
+      # and Schannel alike). This is the only runtime check we keep — the
+      # upstream suite is documented-off (see README "Tests").
+      smoke = [ "--version" ];
+      smokePattern = "libcurl/";
+
       # Native feature set:
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
