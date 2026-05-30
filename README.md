@@ -40,7 +40,7 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 
 ## Manual download
 
-The [Releases](https://github.com/unpins/curl/releases) page has standalone binaries and a `.tar.zst` data archive (man pages and completions) for manual download.
+The [Releases](https://github.com/unpins/curl/releases) page has standalone binaries for manual download.
 
 ## Build notes
 
@@ -63,7 +63,24 @@ These are off in nixpkgs's `curl.nix` defaults; we made no case for re-enabling 
 - **GSS-API / Kerberos / SPNEGO** — would pull MIT krb5 or Heimdal; corporate-AD-on-Linux niche.
 - **RTMP** — librtmp is an obsolete Flash streaming protocol; even upstream defaults off.
 - **libgsasl** — extended SASL mechanisms (OAUTHBEARER, SCRAM-SHA-256) for SMTP/IMAP; curl's built-in SASL covers PLAIN/LOGIN/CRAM-MD5/DIGEST/NTLM which is what most users hit.
-- **`--manual`** — would embed the manpage in the binary (~70 KB); we ship the manpage in the `.tar.zst` instead.
+- **`--manual`** — curl's built-in `curl --manual` text (~70 KB baked into the binary) is off. The man page itself is still embedded via unpins' `withMan` (the `.unpin_man` block — `unpin man curl`).
 - **MultiSSL** — only relevant to libcurl-as-library consumers picking a TLS backend at runtime; CLI doesn't use it.
 
 Open an issue if any of these block real usage; we'll reassess.
+
+### Tests
+
+`doCheck` is off — verified by running the suite, not assumed:
+
+- curl's autotools `make check` is a **no-op** (it builds the test apps but runs zero tests — `Nothing to be done for 'check'`). The real suite is `make test` (`tests/runtests.pl`, which spins up local HTTP/FTP/… servers; the server stack does come up fine in the build sandbox).
+- The full `make test` reports **1610 / 1638 OK (98 %)**, but every one of the ~28 failures is caused by *our own* `--with-ca-embed`: curl prints an extra `Note: Using embedded CA bundle …` line on stderr that upstream's stock-build test expectations don't carry. Those are not curl defects or musl issues, so a clean gate would need a version-fragile per-test ignore-list. `curl --version` is the smoke floor.
+
+### wcurl
+
+Upstream also ships `wcurl`, a 352-line POSIX-sh download wrapper (`wcurl URL` → curl with download-friendly defaults plus RFC 3986 filename decoding). We don't ship it: as installed it's a second executable carrying a `/nix/store` shell shebang — a closure dependency that can't run on a user's machine and breaks the single-binary promise.
+
+**TODO:** port wcurl from shell to C and fold it into a `curl` multicall — an `argv[0]`-dispatched applet embedded as a UNPIN_META alias (the coreutils/busybox pattern), so the convenience lives inside the one static binary on every platform. Until then, the common case is a one-line shell alias:
+
+```sh
+wcurl() { curl -LO --remote-time --retry 5 --continue-at - "$@"; }
+```

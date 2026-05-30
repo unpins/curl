@@ -51,6 +51,13 @@
           preConfigure = (old.preConfigure or "") + ''
             configureFlagsArray+=("--disable-shared")
           '';
+          # curl 8.8+ also installs `wcurl`, a POSIX-sh download wrapper. It
+          # lands in bin/ as a *script* with a `/nix/store/...-bash` shebang —
+          # a second executable AND a store-closure dependency that can't run
+          # on a user's machine. Drop it; we ship one self-contained `curl`.
+          postInstall = (old.postInstall or "") + ''
+            rm -f "''${bin:-$out}/bin/wcurl"
+          '';
         });
 
       # Windows feature set:
@@ -69,6 +76,13 @@
         filterConfigureFlag = f: f != "--without-ssl";
         extraConfigureFlags = [ "--with-schannel" ];
         extraCFlags = [ "-DNGHTTP2_STATICLIB" "-DCURL_STATICLIB" "-DPSL_STATIC" ];
+        # Drop the `wcurl` sh wrapper here too (see native build): a unix
+        # shell script next to curl.exe is dead weight on Windows.
+        extraOverrides = old: {
+          postInstall = (old.postInstall or "") + ''
+            rm -f "''${bin:-$out}/bin/wcurl"
+          '';
+        };
       };
     };
 }
