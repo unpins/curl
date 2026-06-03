@@ -9,18 +9,19 @@ Standalone build of [curl](https://curl.se/).
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-## Installation
+## Usage
 
-Install with [unpin](https://github.com/unpins/unpin):
+Run the `curl` program with [unpin](https://github.com/unpins/unpin):
 
 ```bash
-unpin curl
+unpin curl https://example.com
+unpin curl -LO https://example.com/file.tar.gz   # download to a file
 ```
 
-Or run without installing:
+To install it onto your PATH:
 
 ```bash
-unpin run curl
+unpin install curl
 ```
 
 ## Build locally
