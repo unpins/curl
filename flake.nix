@@ -14,6 +14,7 @@
     in
     ulib.mkStandaloneFlake {
       inherit self;
+      dnsFallback = true; # resolves hostnames; opt into the Android DNS fallback
       name = "curl";
 
       # Smoke floor: `curl --version` on every native ABI + the Windows
