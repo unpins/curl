@@ -24,6 +24,23 @@
       smoke = [ "--version" ];
       smokePattern = "libcurl/";
 
+      # Engine (no multicall — single binary): build curl with the unpin-llvm
+      # engine so it links the SAME engine-built openssl/zlib/nghttp2/… closure
+      # the rest of the catalog converges on (openssl/dnsutils already migrated).
+      # useEngine kicks in on linux/darwin; Windows keeps useEngine=false → plain
+      # mingw pkgs (windowsBuild below, not yet on the engine).
+      engine = "unpin-llvm";
+
+      # libpsl compiles the public-suffix list in as a builtin DAFSA (the
+      # `.DAFSA@PSL_` blob in the binary), and curl resolves it via psl_builtin()
+      # / psl_latest(NULL) — which falls back to the builtin when the dist file is
+      # absent. So the compile-time `…/publicsuffix-list…/public_suffix_list.dat`
+      # path baked into libpsl is a DEAD string the running binary never opens;
+      # scrub it so the shipped binary keeps 0 store references. (The pre-engine
+      # build carried this same vestigial ref; tier-3 fixes it rather than keeping
+      # the status quo.)
+      removeReferences = [ "publicsuffix-list" ];
+
       # Native feature set:
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
