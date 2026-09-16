@@ -52,8 +52,9 @@ The [Releases](https://github.com/unpins/curl/releases) page has standalone bina
 
 ### Disabled (conscious)
 
-- **HTTP/3** — off everywhere. Needs `quictls` (a BoringSSL/ngtcp2-friendly OpenSSL fork) plus `ngtcp2` + `nghttp3`. Not in nixpkgs.
+- **HTTP/3** — off everywhere, and not for want of a dependency. That reason used to hold when HTTP/3 needed the `quictls` fork of OpenSSL; it no longer does. `ngtcp2` and `nghttp3` build against ordinary OpenSSL and work in the static build this package starts from — measured: `--http3` gets a real HTTP/3 response, for about +480 KB. Turning it on is pending the next curl update.
 - **SCP / SFTP (libssh2)** — off on Windows only. libssh2 needs a crypto backend (OpenSSL / mbedTLS / wolfSSL); with Schannel as our TLS stack there's nothing for libssh2 to link against. Microsoft's own bundled `curl.exe` ships without SSH either. Linux / macOS keep `scp://` and `sftp://`.
+- **GSS-API / Kerberos / SPNEGO** — off on Linux and macOS. MIT krb5 does not link into a static binary, so the static curl drops it; the ordinary dynamic curl has all three. The Windows build does have them, through Windows' own SSPI rather than krb5.
 
 ### Disabled (inherited from nixpkgs default; we don't override)
 
@@ -61,7 +62,6 @@ These are off in nixpkgs's `curl.nix` defaults; we made no case for re-enabling 
 
 - **LDAP / LDAPS** — pulls OpenLDAP + cyrus-sasl chain; almost no one queries LDAP via curl.
 - **WebSockets (`ws://`, `wss://`)** — still labeled experimental by upstream; nixpkgs doesn't pass `--enable-websockets`.
-- **GSS-API / Kerberos / SPNEGO** — would pull MIT krb5 or Heimdal; corporate-AD-on-Linux niche.
 - **RTMP** — librtmp is an obsolete Flash streaming protocol; even upstream defaults off.
 - **libgsasl** — extended SASL mechanisms (OAUTHBEARER, SCRAM-SHA-256) for SMTP/IMAP; curl's built-in SASL covers PLAIN/LOGIN/CRAM-MD5/DIGEST/NTLM which is what most users hit.
 - **`--manual`** — curl's built-in `curl --manual` text (~70 KB baked into the binary) is off. The man page itself is still embedded via unpins' `withMan` (the `.unpin_man` block — `unpin man curl`).

@@ -44,7 +44,16 @@
       # Native feature set:
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
-      #   http3 OFF: needs quictls-patched openssl.
+      #
+      # http3Support = false is OURS, and the old reason for it (HTTP/3 needed
+      # the quictls fork of OpenSSL) no longer holds: nixpkgs builds ngtcp2 +
+      # nghttp3 against stock OpenSSL and `pkgsStatic.curl` ships HTTP/3 by
+      # default. Measured with the flag removed: the binary grows 481 KB, keeps
+      # 0 store references, and `--http3` gets a real HTTP/3 response
+      # (%{http_version} = 3) from cloudflare-quic.com. It stays off only until
+      # this package catches up with upstream curl — two of the advisories open
+      # against 8.20.0 are HTTP/3-only, so switching it on is worth doing with
+      # the version bump, not before it.
       #
       # Embed the Mozilla CA bundle via curl's --with-ca-embed (8.5+).
       # The embed is the default trust store: the curl CLI uses it
@@ -80,8 +89,16 @@
           # lands in bin/ as a *script* with a `/nix/store/...-bash` shebang —
           # a second executable AND a store-closure dependency that can't run
           # on a user's machine. Drop it; we ship one self-contained `curl`.
+          #
+          # Their man pages go with them. withMan embeds the WHOLE man output,
+          # so leaving them behind ships `unpin man curl wcurl` and
+          # `unpin man curl curl-config` — manuals for two commands this binary
+          # does not have. (`curl-config` is a libcurl build helper nixpkgs
+          # moves to the dev output, so it never reaches the artifact either.)
           postInstall = (old.postInstall or "") + ''
             rm -f "''${bin:-$out}/bin/wcurl"
+            rm -f "''${man:-$out}"/share/man/man1/wcurl.1* \
+                  "''${man:-$out}"/share/man/man1/curl-config.1*
           '';
         });
 
@@ -106,6 +123,8 @@
         extraOverrides = old: {
           postInstall = (old.postInstall or "") + ''
             rm -f "''${bin:-$out}/bin/wcurl"
+            rm -f "''${man:-$out}"/share/man/man1/wcurl.1* \
+                  "''${man:-$out}"/share/man/man1/curl-config.1*
           '';
         };
       };
