@@ -45,15 +45,17 @@
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
       #
-      # http3Support = false is OURS, and the old reason for it (HTTP/3 needed
-      # the quictls fork of OpenSSL) no longer holds: nixpkgs builds ngtcp2 +
-      # nghttp3 against stock OpenSSL and `pkgsStatic.curl` ships HTTP/3 by
-      # default. Measured with the flag removed: the binary grows 481 KB, keeps
+      # HTTP/3 is on. It was off here for a reason that stopped being true:
+      # HTTP/3 once needed the `quictls` fork of OpenSSL, and nixpkgs now
+      # builds ngtcp2 + nghttp3 against stock OpenSSL. Measured: +481 KB, still
       # 0 store references, and `--http3` gets a real HTTP/3 response
-      # (%{http_version} = 3) from cloudflare-quic.com. It stays off only until
-      # this package catches up with upstream curl — two of the advisories open
-      # against 8.20.0 are HTTP/3-only, so switching it on is worth doing with
-      # the version bump, not before it.
+      # (%{http_version} = 3) from cloudflare-quic.com.
+      #
+      # Two of the advisories open against 8.20.0 are HTTP/3-only, which makes
+      # the version bump a release blocker for this build specifically: turning
+      # the feature on is what makes those two reachable. Bump before tagging.
+      #
+      # The Windows build below stays without it — see the note there.
       #
       # Embed the Mozilla CA bundle via curl's --with-ca-embed (8.5+).
       # The embed is the default trust store: the curl CLI uses it
@@ -78,7 +80,7 @@
       # `preConfigure` — that bash array is appended at configure-time
       # and is invisible to Nix-list filtering.
       build = pkgs:
-        (pkgs.pkgsStatic.curl.override { http3Support = false; }).overrideAttrs (old: {
+        (pkgs.pkgsStatic.curl.override { http3Support = true; }).overrideAttrs (old: {
           configureFlags = (old.configureFlags or [ ]) ++ [
             "--with-ca-embed=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
@@ -111,6 +113,15 @@
         staticDeps = {
           opensslSupport = false;
           scpSupport     = false;
+          # No HTTP/3 here, and it is not a knob we are declining to turn:
+          # measured with it on, curl's configure stops the build with
+          # "the detected TLS library does not support QUIC, making
+          # --with-ngtcp2 a no-no". Schannel has no QUIC, and ngtcp2 needs a
+          # crypto backend that does — nixpkgs happily cross-builds ngtcp2 and
+          # nghttp3 for mingw, so the eval and the dependency closure both look
+          # fine right up to configure. Enabling it means moving Windows off
+          # Schannel onto OpenSSL, which costs the Windows certificate store
+          # and gains one protocol version. Not a trade worth making.
           http3Support   = false;
         };
         # curl.nix injects --without-ssl when opensslSupport=false;

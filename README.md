@@ -50,9 +50,13 @@ The [Releases](https://github.com/unpins/curl/releases) page has standalone bina
 - **Linux / macOS use OpenSSL** with an **embedded Mozilla CA bundle** baked in via curl's `--with-ca-embed` (curl 8.5+). The embed is the **default trust store** — used whenever you don't pass `--cacert` / `--capath` (or set `$CURL_CA_BUNDLE` / `$SSL_CERT_FILE`) — so HTTPS works identically on Debian, scratch containers, busybox-init, or freshly-installed BSDs. To trust roots installed via your distro's `update-ca-certificates` (e.g. a corporate root), point curl at the host bundle: `curl --cacert /etc/ssl/certs/ca-certificates.crt …` or `export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`. Roughly +454 KB binary size.
 - **Windows uses Schannel** (the OS-native TLS stack) instead of OpenSSL. Schannel reads roots from the Windows certificate store via `CertOpenSystemStoreW`, so there's no bundle to ship; users manage trust through Windows itself. As a side effect, no `--cacert` workflow on Windows — use `certutil` / Group Policy.
 
+### HTTP/3
+
+- **On for Linux and macOS**, through ngtcp2 and nghttp3 over the same OpenSSL the rest of the build uses. `curl --http3 https://…` negotiates QUIC and falls back to HTTP/2 if it can't; `--http3-only` refuses to fall back. Costs about 470 KiB of binary.
+- **Off on Windows**, and not by preference. The Windows build gets its TLS from Schannel so that it can read roots from the Windows certificate store (see above), and Schannel offers no QUIC — curl's own configure rejects the pair outright. Having HTTP/3 there would mean switching Windows to OpenSSL and shipping a CA bundle with it, trading the OS trust store for one protocol version. Windows tops out at HTTP/2.
+
 ### Disabled (conscious)
 
-- **HTTP/3** — off everywhere, and not for want of a dependency. That reason used to hold when HTTP/3 needed the `quictls` fork of OpenSSL; it no longer does. `ngtcp2` and `nghttp3` build against ordinary OpenSSL and work in the static build this package starts from — measured: `--http3` gets a real HTTP/3 response, for about +480 KB. Turning it on is pending the next curl update.
 - **SCP / SFTP (libssh2)** — off on Windows only. libssh2 needs a crypto backend (OpenSSL / mbedTLS / wolfSSL); with Schannel as our TLS stack there's nothing for libssh2 to link against. Microsoft's own bundled `curl.exe` ships without SSH either. Linux / macOS keep `scp://` and `sftp://`.
 - **GSS-API / Kerberos / SPNEGO** — off on Linux and macOS. MIT krb5 does not link into a static binary, so the static curl drops it; the ordinary dynamic curl has all three. The Windows build does have them, through Windows' own SSPI rather than krb5.
 
