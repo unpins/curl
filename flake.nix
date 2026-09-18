@@ -80,8 +80,20 @@
       # `preConfigure` — that bash array is appended at configure-time
       # and is invisible to Nix-list filtering.
       build = pkgs:
-        (pkgs.pkgsStatic.curl.override { http3Support = true; }).overrideAttrs (old: {
-          configureFlags = (old.configureFlags or [ ]) ++ [
+        (pkgs.pkgsStatic.curl.override {
+          http3Support = true;
+          websocketSupport = true;
+          ldapSupport = true;
+          gsaslSupport = true;
+        }).overrideAttrs (old: {
+          # nixpkgs hardcodes `--disable-manual`; `curl --manual` is part of
+          # the program, so turn it back on. `gsaslSupport` only adds the
+          # library, and curl's configure leaves it out unless asked; the
+          # option is `--with-libgsasl` (curl's own summary line suggests a
+          # `--with-gsasl` that configure rejects as unknown).
+          configureFlags = builtins.filter (f: f != "--disable-manual") (old.configureFlags or [ ]) ++ [
+            "--enable-manual"
+            "--with-libgsasl"
             "--with-ca-embed=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
           preConfigure = (old.preConfigure or "") + ''
@@ -123,15 +135,34 @@
           # Schannel onto OpenSSL, which costs the Windows certificate store
           # and gains one protocol version. Not a trade worth making.
           http3Support   = false;
+          websocketSupport = true;
+          gsaslSupport   = true;
+          # ldapSupport stays false: it would cross-build OpenLDAP, while
+          # curl's configure reaches Windows' own wldap32 by itself once
+          # LDAP is enabled (below).
         };
         # curl.nix injects --without-ssl when opensslSupport=false;
         # we're enabling Schannel instead.
-        filterConfigureFlag = f: f != "--without-ssl";
-        extraConfigureFlags = [ "--with-schannel" ];
+        filterConfigureFlag = f: !(builtins.elem f [
+          "--without-ssl" "--disable-ldap" "--disable-ldaps" "--disable-manual"
+        ]);
+        extraConfigureFlags = [
+          "--with-schannel" "--enable-ldap" "--enable-ldaps" "--enable-manual"
+          "--with-libgsasl"
+        ];
         extraCFlags = [ "-DNGHTTP2_STATICLIB" "-DCURL_STATICLIB" "-DPSL_STATIC" ];
+        # libgsasl's SCRAM runs passwords through SASLprep, which lives in
+        # libidn. The static archive's `.pc` says so under `Libs.private`, but
+        # curl's configure asks pkg-config for `--libs-only-l` without
+        # `--static`, so its `gsasl_init` probe links a bare `-lgsasl`, fails,
+        # and curl quietly builds without gsasl.
+        extraInputs = [ (ulib.mingwStaticCross pkgs).libidn ];
         # Drop the `wcurl` sh wrapper here too (see native build): a unix
         # shell script next to curl.exe is dead weight on Windows.
         extraOverrides = old: {
+          preConfigure = (old.preConfigure or "") + ''
+            export LIBS="''${LIBS:+$LIBS }-lidn"
+          '';
           postInstall = (old.postInstall or "") + ''
             rm -f "''${bin:-$out}/bin/wcurl"
             rm -f "''${man:-$out}"/share/man/man1/wcurl.1* \

@@ -60,18 +60,19 @@ The [Releases](https://github.com/unpins/curl/releases) page has standalone bina
 - **SCP / SFTP (libssh2)** — off on Windows only. libssh2 needs a crypto backend (OpenSSL / mbedTLS / wolfSSL); with Schannel as our TLS stack there's nothing for libssh2 to link against. Microsoft's own bundled `curl.exe` ships without SSH either. Linux / macOS keep `scp://` and `sftp://`.
 - **GSS-API / Kerberos / SPNEGO** — off on Linux and macOS. MIT krb5 does not link into a static binary, so the static curl drops it; the ordinary dynamic curl has all three. The Windows build does have them, through Windows' own SSPI rather than krb5.
 
-### Disabled (inherited from nixpkgs default; we don't override)
+### Also on
 
-These are off in nixpkgs's `curl.nix` defaults; we made no case for re-enabling them:
+The stock nixpkgs curl leaves these out; this build turns them on:
 
-- **LDAP / LDAPS** — pulls OpenLDAP + cyrus-sasl chain; almost no one queries LDAP via curl.
-- **WebSockets (`ws://`, `wss://`)** — still labeled experimental by upstream; nixpkgs doesn't pass `--enable-websockets`.
-- **RTMP** — librtmp is an obsolete Flash streaming protocol; even upstream defaults off.
-- **libgsasl** — extended SASL mechanisms (OAUTHBEARER, SCRAM-SHA-256) for SMTP/IMAP; curl's built-in SASL covers PLAIN/LOGIN/CRAM-MD5/DIGEST/NTLM which is what most users hit.
-- **`--manual`** — curl's built-in `curl --manual` text (~70 KB baked into the binary) is off. The man page itself is still embedded via unpins' `withMan` (the `.unpin_man` block — `unpin man curl`).
-- **MultiSSL** — only relevant to libcurl-as-library consumers picking a TLS backend at runtime; CLI doesn't use it.
+- **WebSockets** — `ws://` and `wss://`. Part of curl's default build since 8.11.
+- **LDAP / LDAPS** — `ldap://` and `ldaps://` queries. Windows uses the system's own LDAP client, which always signs in: as the current Windows user (right for Active Directory), or as the account you give with `-u`. It has no anonymous query, so other servers need `-u`.
+- **libgsasl** — SCRAM-SHA-1 and SCRAM-SHA-256 logins for IMAP, POP3 and SMTP, on top of curl's built-in PLAIN, LOGIN, CRAM-MD5, DIGEST-MD5, NTLM and OAUTHBEARER.
+- **`curl --manual`** — the full manual, printed by the binary itself.
 
-Open an issue if any of these block real usage; we'll reassess.
+Still off:
+
+- **RTMP** — curl removed it in 8.20; there is nothing left to enable.
+- **MultiSSL** — lets a program linking libcurl pick a TLS library at run time; the command line has one TLS library and no use for the choice.
 
 ### Tests
 
@@ -84,7 +85,7 @@ Open an issue if any of these block real usage; we'll reassess.
 
 Upstream also ships `wcurl`, a POSIX-sh download wrapper (`wcurl URL` → curl with download-friendly defaults). We don't ship it: as installed it carries a `/nix/store` shell shebang — a closure dependency that can't run on a user's machine and breaks the single-binary promise.
 
-**TODO:** port wcurl to C and fold it into `curl` as an embedded applet (the coreutils/busybox pattern), so the convenience lives inside the one static binary on every platform. Until then, the common case is a one-line shell alias:
+The common case is a one-line shell alias:
 
 ```sh
 wcurl() { curl -LO --remote-time --retry 5 --continue-at - "$@"; }
