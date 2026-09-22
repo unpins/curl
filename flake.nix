@@ -24,12 +24,14 @@
       smoke = [ "--version" ];
       smokePattern = "libcurl/";
 
-      # Engine (no multicall — single binary): build curl with the unpin-llvm
-      # engine so it links the SAME engine-built openssl/zlib/nghttp2/… closure
-      # the rest of the catalog converges on (openssl/dnsutils already migrated).
-      # useEngine kicks in on linux/darwin; Windows keeps useEngine=false → plain
-      # mingw pkgs (windowsBuild below, not yet on the engine).
+      # Build curl with the unpin-llvm engine so it links the SAME engine-built
+      # openssl/zlib/nghttp2/… closure the rest of the catalog converges on.
       engine = "unpin-llvm";
+      multicall = {
+        # The `.exe` on the engine too, not the nixpkgs mingw-gcc cross.
+        windows = true;
+        programs = [{ name = "curl"; }];
+      };
 
       # libpsl compiles the public-suffix list in as a builtin DAFSA (the
       # `.DAFSA@PSL_` blob in the binary), and curl resolves it via psl_builtin()
