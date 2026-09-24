@@ -53,9 +53,8 @@
       # 0 store references, and `--http3` gets a real HTTP/3 response
       # (%{http_version} = 3) from cloudflare-quic.com.
       #
-      # Two of the advisories open against 8.20.0 are HTTP/3-only, which makes
-      # the version bump a release blocker for this build specifically: turning
-      # the feature on is what makes those two reachable. Bump before tagging.
+      # Turning it on is also what makes HTTP/3-only advisories reachable here,
+      # so this build has to track curl's releases rather than lag them.
       #
       # The Windows build below stays without it — see the note there.
       #
