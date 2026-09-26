@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [8.22.0-1] - 2026-09-26
+
 ### Added
 
 - **HTTP/3** on Linux and macOS. `curl --http3 https://…` negotiates QUIC, and
