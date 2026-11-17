@@ -65,7 +65,9 @@
       # compile-time --with-ca-bundle path is NOT consulted at
       # runtime. To trust host-installed roots (e.g. corp CA via
       # update-ca-certificates), users explicitly pass --cacert or
-      # set CURL_CA_BUNDLE. ~454KB cost.
+      # set CURL_CA_BUNDLE. ~454KB cost. The bundle is data, so it comes
+      # from the build platform: the target's cacert is built with the
+      # target's gcc stdenv, which a cross would otherwise bootstrap.
       #
       # `--disable-shared` is critical on darwin: pkgsStatic.curl on
       # darwin still produces a `libcurl.4.dylib` and libtool prefers
@@ -95,7 +97,7 @@
           configureFlags = builtins.filter (f: f != "--disable-manual") (old.configureFlags or [ ]) ++ [
             "--enable-manual"
             "--with-libgsasl"
-            "--with-ca-embed=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            "--with-ca-embed=${pkgs.buildPackages.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
           preConfigure = (old.preConfigure or "") + ''
             configureFlagsArray+=("--disable-shared")
