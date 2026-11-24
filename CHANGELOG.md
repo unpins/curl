@@ -18,7 +18,7 @@
 
 ### Changed
 
-- curl 8.21.0, fixing 18 of the 27 known vulnerabilities in 8.20.0.
+- curl 8.22.0, fixing all 27 vulnerabilities known in 8.20.0 at the time.
 - The Windows binary is now built by the same compiler as the Linux and macOS
   ones. It is about 5% smaller (3.41 MB to 3.23 MB); `--version`, HTTP, HTTPS
   through the Windows certificate store, `file://` and an international domain
