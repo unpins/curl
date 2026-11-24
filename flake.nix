@@ -114,13 +114,21 @@
 
       # Windows feature set:
       #   Schannel (Windows native TLS, no CA bundle to ship) instead
-      #   of OpenSSL; libssh2 disabled (needs a crypto backend).
-      #   Microsoft's own curl.exe also ships without scp.
+      #   of OpenSSL; libssh2 over WinCNG for scp/sftp.
       windowsBuild = pkgs: ulib.mingwStaticBinary {
         pkg = (ulib.mingwStaticCross pkgs).curl;
         staticDeps = {
           opensslSupport = false;
-          scpSupport     = false;
+          scpSupport     = true;
+          # libssh2 over WinCNG, Windows' own crypto, as curl's TLS is over
+          # Schannel: nixpkgs' recipe propagates OpenSSL, which this build
+          # does not link.
+          libssh2 = ((ulib.mingwStaticCross pkgs).libssh2.override { openssl = null; }).overrideAttrs (old: {
+            propagatedBuildInputs = [ ];
+            # nixpkgs adds the gcc-built mingw-w64 CRT; the engine brings its own.
+            buildInputs = builtins.filter (d: (d.pname or "") != "mingw-w64") old.buildInputs;
+            configureFlags = (old.configureFlags or [ ]) ++ [ "--with-crypto=wincng" ];
+          });
           # No HTTP/3 here, and it is not a knob we are declining to turn:
           # measured with it on, curl's configure stops the build with
           # "the detected TLS library does not support QUIC, making

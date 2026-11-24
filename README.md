@@ -57,7 +57,7 @@ The [Releases](https://github.com/unpins/curl/releases) page has standalone bina
 
 ### Disabled (conscious)
 
-- **SCP / SFTP (libssh2)** — off on Windows only. libssh2 needs a crypto backend (OpenSSL / mbedTLS / wolfSSL); with Schannel as our TLS stack there's nothing for libssh2 to link against. Microsoft's own bundled `curl.exe` ships without SSH either. Linux / macOS keep `scp://` and `sftp://`.
+- **Ed25519 and ECDSA SSH keys** — off on Windows only. `scp://` and `sftp://` there go through Windows' own cryptography, which libssh2 uses for RSA keys only, so log in with an RSA key or a password, and the server must offer an RSA host key. Linux / macOS take every key type.
 - **GSS-API / Kerberos / SPNEGO** — off on Linux and macOS. MIT krb5 does not link statically, so the static curl drops it; the ordinary dynamic curl has all three. The Windows build does have them, through Windows' own SSPI rather than krb5.
 
 ### Also on

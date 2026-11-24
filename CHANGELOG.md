@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- `scp://` and `sftp://` on Windows, as on Linux and macOS. The SSH layer uses
+  Windows' own cryptography, so nothing extra is needed on the machine; it
+  takes RSA keys and passwords, not Ed25519 or ECDSA keys.
+
 ## [8.22.0-1] - 2026-09-26
 
 ### Added
