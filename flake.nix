@@ -38,20 +38,14 @@
       # / psl_latest(NULL) — which falls back to the builtin when the dist file is
       # absent. So the compile-time `…/publicsuffix-list…/public_suffix_list.dat`
       # path baked into libpsl is a DEAD string the running binary never opens;
-      # scrub it so the shipped binary keeps 0 store references. (The pre-engine
-      # build carried this same vestigial ref; tier-3 fixes it rather than keeping
-      # the status quo.)
+      # scrub it so the shipped binary keeps 0 store references.
       removeReferences = [ "publicsuffix-list" ];
 
       # Native feature set:
       #   openssl + zlib + nghttp2 + libssh2 + libidn2 + libpsl
       #   + brotli + zstd — taken from `pkgs.curl` defaults.
       #
-      # HTTP/3 is on. It was off here for a reason that stopped being true:
-      # HTTP/3 once needed the `quictls` fork of OpenSSL, and nixpkgs now
-      # builds ngtcp2 + nghttp3 against stock OpenSSL. Measured: +481 KB, still
-      # 0 store references, and `--http3` gets a real HTTP/3 response
-      # (%{http_version} = 3) from cloudflare-quic.com.
+      # HTTP/3 is on, as in nixpkgs' default curl.
       #
       # Turning it on is also what makes HTTP/3-only advisories reachable here,
       # so this build has to track curl's releases rather than lag them.
@@ -84,7 +78,6 @@
       # and is invisible to Nix-list filtering.
       build = pkgs:
         (pkgs.pkgsStatic.curl.override {
-          http3Support = true;
           websocketSupport = true;
           ldapSupport = true;
           gsaslSupport = true;
@@ -160,12 +153,12 @@
         # `--static`, so its `gsasl_init` probe links a bare `-lgsasl`, fails,
         # and curl quietly builds without gsasl.
         extraInputs = [ (ulib.mingwStaticCross pkgs).libidn ];
-        # Drop the `wcurl` sh wrapper here too (see native build): a unix
-        # shell script next to curl.exe is dead weight on Windows.
         extraOverrides = old: {
           preConfigure = (old.preConfigure or "") + ''
             export LIBS="''${LIBS:+$LIBS }-lidn"
           '';
+          # Drop the `wcurl` sh wrapper here too (see native build): a unix
+          # shell script next to curl.exe is dead weight on Windows.
           postInstall = (old.postInstall or "") + ''
             rm -f "''${bin:-$out}/bin/wcurl"
             rm -f "''${man:-$out}"/share/man/man1/wcurl.1* \
