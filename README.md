@@ -48,7 +48,7 @@ The [Releases](https://github.com/unpins/curl/releases) page has standalone bina
 ### TLS
 
 - **Linux / macOS use OpenSSL** with an **embedded Mozilla CA bundle** baked in via curl's `--with-ca-embed` (curl 8.5+). The embed is the **default trust store** — used whenever you don't pass `--cacert` / `--capath` (or set `$CURL_CA_BUNDLE` / `$SSL_CERT_FILE`) — so HTTPS works identically on Debian, scratch containers, or busybox-init. To trust roots installed via your distro's `update-ca-certificates` (e.g. a corporate root), point curl at the host bundle: `curl --cacert /etc/ssl/certs/ca-certificates.crt …` or `export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`. Roughly +454 KB binary size.
-- **Windows uses Schannel** (the OS-native TLS stack) instead of OpenSSL. Schannel reads roots from the Windows certificate store via `CertOpenSystemStoreW`, so there's no bundle to ship; users manage trust through Windows itself. As a side effect, no `--cacert` workflow on Windows — use `certutil` / Group Policy.
+- **Windows uses Schannel** (the OS-native TLS stack) instead of OpenSSL. Schannel reads roots from the Windows certificate store via `CertOpenSystemStoreW`, so there's no bundle to ship; users manage trust through Windows itself (`certutil`, Group Policy). `--cacert file.pem` works too, and then that file is trusted instead of the store.
 
 ### HTTP/3
 
